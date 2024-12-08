@@ -1,0 +1,42 @@
+
+# 变量说明
+
+Available[r]：可利用的第r类资源的数目
+Request[p][r]：进程p提出对资源r的请求量
+Need[p][r]：进程p将来还需要的资源r的数量
+Allocation[p][r]：进程p所占用的资源r的数量
+Finished[p]：进程p的结束标记（1表示结束，0表示未结束）
+
+
+# 银行家算法（输入进程和资源状态以及进程请求，输出安全性）
+def safe()
+	if Request[p] <= min(Need[p], Available)
+
+		# 假设分配
+		Need[p] = Need[p] - Request[p]
+		Available = Available - Request[p]
+		Allocation[p] = Allocation[p] + Request[p]
+
+		# 安全检查
+		while True
+			Found = 0
+			for pi in Ps   # Ps为进程集合
+				if not Finished[pi] and Need[pi] <= Available
+					Finished[pi] = 1
+					Available = Available + Allocation[pi]
+					Found = Found + 1
+			if not Found   # 已经没有可结束的进程
+				end while
+
+		# 安全检查
+		if all Finished
+			return 1   # 所有进程都已经结束，返回状态安全
+		else 
+			return 0   # 仍有未结束的进程，返回状态死锁
+	else 
+		return 0   # 请求异常或超过资源量，返回状态异常
+
+
+
+
+

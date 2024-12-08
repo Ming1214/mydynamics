@@ -1,0 +1,84 @@
+
+# 编码形式/变量说明
+
+I: 零件种类
+J: 每种零件的数量
+K: 零件的工艺数量
+A: 小车的数量
+
+(i, j, k): 将第i类第j号零件搬去第k道工艺的任务
+task[i][j][k] = a   # 任务(i, j, k)由第a号小车搬运
+distribution[i][j][k][a] = p   # 任务(i, j, k)由第a号小车搬运的概率为p
+
+size: 样本集规模
+top_size: 优秀样本规模
+keep_size: 保留的精英样本数目
+cen: 进化世数
+gen: 进化代数
+learn: 学习系数(0~1)
+Cspecimens: 世初样本集
+specimens: 样本集
+top_specimens: 优秀样本集
+
+
+# 初始化分布（无输入，输出初始概率分布）
+def init_distribution():
+	for i, j, k, a in I, J, K, A
+		distribution[i][j][k][a] = 1/A
+	return distribution   # 返回初始化的概率分布
+
+# 初始样本（无输入，输出初始生成的一个样本）
+def init_specimen():
+	used = {1~A}   # 一轮分配中未标记的小车
+	for i, j, k in I, J, K
+		a: 在used里面随机选取一辆小车
+		task[i][j][k] = a
+		used = used - a
+		if used 为空
+			used = {1~A}
+	return task   # 返回初始生成的一个样本
+
+# 轮盘赌采样（输入当前概率分布，输出采样样本）
+def sample(distribution):
+	for i, j, k in I, J, K
+		pro: 0~1之间的随机数
+		for a: 1~A
+			pro = pro - distribution[i][j][k][a]
+			if pro <= 0
+				task[i][j][k] = a
+				end for
+	return task   # 返回采样生成的一个样本
+
+# 概率分布更新（输入优秀样本集、当前概率分布，输出更新后的概率分布）
+def renew(top_specimens, distribution):
+	for i, j, k in I, J, K
+		for a: 1~A
+			n: 优秀样本集中将任务(i, j, k)分配给第a号小车的样本数目
+			distribution[i][j][k][a] = (1-learn)*distribution[i][j][k][a] + learn*n/top_size
+	return distribution   # 返回更新后的概率分布
+
+# EDA主函数
+def main():
+	mintime = inf   # 最短时间，初始化为无穷大
+	distribution = init_distribution()   # 初始化分布
+	Cspecimens = [init_specimen() for s: 1~size]   # 生成世初样本集
+	for c: 1~cen   # 世进化
+		specimens = sorted(Cspecimens)   # 将世初样本集根据时间从小到大排序，并赋值给样本集
+		Cspecimens = []   # 将世初样本集置空
+		if size <= len(specimens)   # 如果现有样本集规模太大，截取前size个样本
+			specimens = specimens[: size]
+		else   # 如果现有样本集规模不够，采样补充并重新排序
+			specimens.extend([sample(distribution) for more: 1~size-len(specimens)])
+			specimens.sort()
+		for g: 1~gen   # 代进化
+			top = specimens[0]   # 截取最优秀的样本
+			mintime = min(mintime, time(top))    # 更新最短时间（time为计算时间的函数）
+			Cspecimens.append(top)   # 将最优秀的样本添加进入世初样本集
+			top_specimens = specimens[: top_size]   # 截取优秀样本集
+			distribution = renew(distribution, top_specimens)   # 更新概率分布
+			specimens = specimens[: keep_size] + [sample(distribution) for more: 1~size-keep_size]   # 更新样本集（保留+采样补充）
+	return mintime   # 返回优化结果
+
+
+
+

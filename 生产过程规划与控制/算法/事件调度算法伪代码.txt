@@ -1,0 +1,109 @@
+
+# 变量说明
+
+pre: 提前系数   # 就近预订算法用
+task[pk]: 负责搬运任务pk的小车   # EDA调度算法用
+
+T：虚拟时钟
+Events：事件列表
+(t, e, p)：事件标记（时间，类型1\2\3，零件）
+1: 加工完成、小车到达，零件被搬起
+2: 小车将零件送达目的地，开始加工或入库储存
+3: 零件到达预定的时间对小车进行召唤
+
+
+# 事件调度仿真（输入零件、机器、小车属性，输出作业时间）
+# 就近预订算法需要补充输入提前系数pre
+# EDA调度算法需要补充输入任务分配表task
+def run()
+
+	# 初始化
+	T, Events = 0, []
+	i = min(机器的数量, 零件的数量)
+	for i: 1~num
+		Events.append((0, 3, pi))
+
+	# 开始仿真
+	while Events:   # 在事件列表被清空时停止
+		Events.sort()   # 按照时间、事件类型、零件编号从小到大排序
+		for (t, e, p) in Events:   # 取出即将到来的事件
+			T = max(t, T)   # 更新虚拟时钟
+			m = 零件p占用的机器
+			a = 零件p占用的小车
+			
+			if e == 1   # 判断是第一类事件
+				将小车a的位置标记为零件p的位置
+				if 零件未加工完成 
+					if 有空闲的下一道工艺所需的机器
+						if safe()   # 银行家算法进行安全性检验
+							释放机器m
+							零件p标记占用最近的下一道工艺所需的空闲的机器m*
+							dis = m到m*的距离
+							Events.remove((t, e, p))
+							Events.append((T+dis/v ,1, p))
+						else   # 不安全
+							释放小车a 
+					else   # 无空闲机器
+						释放小车a
+						Events.remove((t, e, p))
+						Events.append((T+sleep, 3, p))
+				else   # 零件加工已完成，需要搬去出口
+					dis = 零件p到出口的距离
+					Events.remove((t, e, p))
+					Events.append((T+dis/v, 2, p))
+					释放机器m
+				end for
+
+			if e == 2   # 判断是第二类事件
+				if m是机器
+					将小车a和零件p的位置标记为机器m的位置并释放小车a
+					dt = 零件p下一道工序的加工时间
+					Events.remove((t, e, p))
+					
+					"""就近预订算法用"""
+					pt = dt * (1-pre)   # 提前时间
+					Events.append((T+pt, 3, p))   # 预定
+					
+					"""EDA\随机调度算法用"""
+					Events.append((T+dt,1, p))
+					
+				else # m是出口
+					将小车a和零件p的位置标记为出口并释放小车a
+					Events.remove((t, e, p))
+					if 入口有零件p*在等待加工
+						Events.append((0, 3, p*))
+				end for
+
+			if e == 3   # 判断是第三类事件
+				
+				"""就近预订算法用"""
+				if 有空闲小车
+					零件p标记占用最近的空闲小车a*   # 就近
+					dis = 小车a*到零件p所在位置的距离
+					dt = 零件p当前工序的加工时间
+					rt = dt * pre   # 当前工序剩余加工时间
+					Events.remove((t, e, p))
+					Events.append((max(T+dis/v ,t+rt),1, p))
+					end for
+				
+				"""EDA调度算法用"""
+				a* = 负责将零件p搬去下一道工序的小车(task)
+				if a*空闲
+					零件p标记占用小车a*
+					dis = 小车a*到零件p所在位置的距离
+					Events.remove((t, e, p))
+					Events.append((T+dis/v,1, p))
+					end for
+				
+				"""随机调度算法用"""
+				if 有空闲小车
+					零件p标记占用随机选择的空闲小车a*
+					dis = 小车a*到零件p所在位置的距离
+					Events.remove((t, e, p))
+					Events.append((T+dis/v,1, p))
+					end for
+				
+	return  T   # 返回作业时间
+
+
+
